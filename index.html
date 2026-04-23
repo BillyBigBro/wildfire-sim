@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Educational Wildfire Simulator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="navbar">
+      <div class="brand">
+        <span>educational wildfire simulator</span>
+        <span class="brand-icon" aria-hidden="true">&#128293;</span>
+      </div>
+      <nav class="nav-links" aria-label="Primary">
+        <a class="active" href="index.html">home</a>
+        <a href="about.html">about</a>
+        <a href="https://github.com/BillyBigBro/wildfire-sim/" target="_blank" rel="noopener noreferrer">API</a>
+      </nav>
+    </header>
+
+    <main class="content">
+      <h1>select a state</h1>
+      <label class="visually-hidden" for="state-select">Select a US state</label>
+      <select id="state-select" name="state">
+        <option value="" selected disabled>Choose a state</option>
+        <option>Arizona</option>
+        <option>California</option>
+        <option>Colorado</option>
+        <option>Florida</option>
+        <option>Georgia</option>
+        <option>Idaho</option>
+        <option>Kansas</option>
+        <option>Montana</option>
+        <option>Nevada</option>
+        <option>New Mexico</option>
+        <option>Oregon</option>
+        <option>Texas</option>
+        <option>Utah</option>
+        <option>Washington</option>
+        <option>Wyoming</option>
+      </select>
+    </main>
+
+    <p class="footer-note">educational purposes only</p>
+  </body>
+</html>
