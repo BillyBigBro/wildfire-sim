@@ -246,6 +246,9 @@ function renderResults(stateTitle, rows) {
                 </div>
               </div>
             </div>
+            <div class="weather-actions">
+              <button id="weather-done-button" type="button">done</button>
+            </div>
           </div>
         </section>
       </section>
@@ -449,6 +452,7 @@ function setupWeatherControls(stageEl) {
   const directionValue = document.getElementById("wind-direction-value");
   const directionInput = document.getElementById("wind-direction-input");
   const weatherOverlay = document.getElementById("weather-overlay");
+  const weatherDoneButton = document.getElementById("weather-done-button");
 
   if (!humidityInput || !humidityValue || !soilInput || !soilValue || !directionCircle || !directionLine || !directionValue || !directionInput) {
     return;
@@ -537,6 +541,12 @@ function setupWeatherControls(stageEl) {
       if (event.target === weatherOverlay) {
         stageEl.classList.remove("is-weather-open");
       }
+    });
+  }
+
+  if (weatherDoneButton) {
+    weatherDoneButton.addEventListener("click", () => {
+      // Placeholder for future weather submission logic.
     });
   }
 

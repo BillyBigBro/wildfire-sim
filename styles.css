@@ -396,6 +396,28 @@ h1.is-fading {
   font-size: clamp(0.95rem, 1.2vw, 1.15rem);
 }
 
+.weather-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.9rem;
+}
+
+#weather-done-button {
+  border: 3px solid #000;
+  background: #ffffff;
+  color: #111111;
+  font: inherit;
+  font-size: clamp(1rem, 1.25vw, 1.2rem);
+  text-transform: lowercase;
+  padding: 0.22rem 0.8rem;
+  cursor: pointer;
+}
+
+#weather-done-button:focus-visible {
+  outline: 2px solid #1a5fd0;
+  outline-offset: 2px;
+}
+
 @keyframes fade-up {
   from {
     opacity: 0;
