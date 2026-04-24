@@ -26,7 +26,7 @@
     </header>
 
     <main class="content">
-      <h1>select a state</h1>
+      <h1 id="page-title">select a state</h1>
       <label class="visually-hidden" for="state-select">Select a US state</label>
       <select id="state-select" name="state">
         <option value="" selected disabled>Choose a state</option>
@@ -46,8 +46,11 @@
         <option>Washington</option>
         <option>Wyoming</option>
       </select>
+
+      <section id="results" class="results" aria-live="polite"></section>
     </main>
 
     <p class="footer-note">educational purposes only</p>
+    <script src="app.js"></script>
   </body>
 </html>

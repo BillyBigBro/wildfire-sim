@@ -12,7 +12,7 @@
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
+  <body class="about-page">
     <header class="navbar">
       <div class="brand">
         <span>educational wildfire simulator</span>
@@ -26,12 +26,49 @@
     </header>
 
     <main class="content about-content">
-      <h1>about</h1>
-      <p>
-        This educational wildfire simulator demonstrates wildfire-relevant state selection
-        for classroom and learning-focused use.
+      <section class="about-columns" aria-label="About wildfire impacts and climate context">
+        <div class="about-left">
+          <ul>
+            <li>United States taxpayers pay about <b>$3 billion</b> a year to fight wildfires<sup>2</sup>.</li>
+            <li>
+              The recent Palisades Fire grew to destroy <b>23,448 acres</b> and <b>6,837 structures</b>,
+              before it was fully contained. Causing <b>$25 billion</b> in damages and taking the
+              lives of <b>12 people</b>.
+            </li>
+          </ul>
+        </div>
+        <div class="about-right">
+          <p>
+            "Global temperatures in 2024 were <u>2.30 degrees Fahrenheit</u> above the agency's
+            20th-century baseline (1951-1980), which <b>tops the record set in 2023</b>. The new
+            record comes after <b>15 consecutive months</b> (June 2023 through August 2024) of monthly
+            temperature records-<b>an unprecedented heat streak</b>"<sup>1</sup>
+          </p>
+          <img
+            class="about-right-image"
+            src="nasa photo.png"
+            alt="Global temperature anomaly map showing widespread warming in 2024"
+          />
+        </div>
+      </section>
+
+      <p class="about-middle-text">
+        As climate change progresses, wildfires become a more prevalent issue. Different
+        environmental conditions can affect how fires spread. This is an educational tool to
+        showcase how wildfire spreads under certain weather conditions.
       </p>
     </main>
+
+    <section class="about-citations" aria-label="Citations">
+      <p>
+        1. R. Bardan, "Temperatures Rising: NASA Confirms 2024 Warmest Year on Record," NASA,
+        Jan. 10, 2025.
+      </p>
+      <p>
+        2. NBC News, "Wildfires Are Growing, And Growing More Costly," NBC News, May 15, 2014.
+        <a href="https://www.nbcnews.com/business/real-estate/wildfires-are-growing-growing-more-costly-n106266" target="_blank" rel="noopener noreferrer">https://www.nbcnews.com/business/real-estate/wildfires-are-growing-growing-more-costly-n106266</a>
+      </p>
+    </section>
 
     <p class="footer-note">educational purposes only</p>
   </body>
