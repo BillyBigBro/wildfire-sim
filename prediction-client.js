@@ -91,17 +91,12 @@ async function submitWeatherDataForPrediction() {
  * Display prediction result to user
  */
 function displayPredictionResult(result) {
-  const message = `
-Predicted Fire Size: ${result.predicted_acres.toFixed(0)} acres
-
-This prediction is based on:
-- Fire location (image coordinates)
-- Terrain features
-- Day of ignition weather
-- Weather 3 days after ignition
-  `;
-
-  alert(message);
+  const output = document.getElementById("prediction-output");
+  if (output) {
+    const acres = result.predicted_acres.toFixed(2);
+    output.innerHTML = `acres burned: <span>${acres}</span>`;
+    output.classList.remove("is-hidden");
+  }
 
   // Optionally, log to console for debugging
   console.log("Full prediction data:", result);

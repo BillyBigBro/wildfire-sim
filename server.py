@@ -7,11 +7,13 @@ Then access from frontend at: http://localhost:5000/predict
 """
 
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import csv
 import os
 from model import predict_acres_burned
 
 app = Flask(__name__)
+CORS(app)
 
 # Path to coordinates CSV (from the website)
 COORDINATES_CSV = "coordinates.csv"

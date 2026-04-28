@@ -378,27 +378,30 @@ def predict_acres_burned(lat, lon, day0_weather, day3_weather, model_path=MODEL_
     X = engineer_features(X)
     
     # Select features (must match training features)
-    features = [
-        "lat", "lon", "elevation_m", "slope_deg", "aspect_sin", "aspect_cos",
-        "ndvi", "land_cover", "day_of_year", "peak_fire_season",
-        "rh_min_7d_prior (%)", "precip_7d_prior (mm)", "soil_moisture_7d_prior_avg (m³/m³)",
-        "temp_max_7d_prior (°C)", "rh_min_d_minus1 (%)", "temp_max_d_minus1 (°C)",
-        "soil_moisture_avg_d_minus1 (m³/m³)", "wind_gust_max_d_minus1 (km/h)",
-        "precip_sum_d_minus1 (mm)", "rh_ign_1400 (%)", "temp_ign_1400 (°C)",
-        "soil_moisture_ign_1400 (m³/m³)", "wind_gust_ign_1400 (km/h)",
-        "wind_speed_ign_1400 (km/h)", "rh_min_d_plus1 (%)", "rh_min_d_plus2 (%)",
-        "rh_min_d_plus3 (%)", "wind_speed_max_d_plus1 (km/h)", "wind_speed_max_d_plus2 (km/h)",
-        "wind_speed_max_d_plus3 (km/h)", "precip_30d_post (mm)", "rh_min_30d_post (%)",
-        "wind_speed_max_30d_post (km/h)", "fire_risk_index", "fuel_dryness",
-        "hot_dry_windy", "terrain_wind", "gust_to_wind_ratio", "wind_slope_alignment",
-        "rh_drying_trend", "temp_heating_trend", "fuel_dryness_d_minus1",
-        "min_rh_3d_post", "max_gust_3d_post", "max_temp_3d_post", "precip_3d_post",
-        "spread_danger_index", "post_rh_drop", "precip_change_post_vs_prior",
-        "soil_drying_post", "extreme_fire_combo", "heat_wind_combo", "dryness_explosion",
-        "fire_acceleration", "wind_fire_drive", "heat_dryness_post",
-        "bad_conditions_persistence", "dry_windy_persistence", "terrain_fire_amplification",
-        "fuel_wind_dryness", "shock_index"
-    ]
+    if hasattr(model, "feature_names_in_"):
+        features = list(model.feature_names_in_)
+    else:
+        features = [
+            "lat", "lon", "elevation_m", "slope_deg", "aspect_sin", "aspect_cos",
+            "ndvi", "land_cover", "day_of_year", "peak_fire_season",
+            "rh_min_7d_prior (%)", "precip_7d_prior (mm)", "soil_moisture_7d_prior_avg (m³/m³)",
+            "temp_max_7d_prior (°C)", "rh_min_d_minus1 (%)", "temp_max_d_minus1 (°C)",
+            "soil_moisture_avg_d_minus1 (m³/m³)", "wind_gust_max_d_minus1 (km/h)",
+            "precip_sum_d_minus1 (mm)", "rh_ign_1400 (%)", "temp_ign_1400 (°C)",
+            "soil_moisture_ign_1400 (m³/m³)", "wind_gust_ign_1400 (km/h)",
+            "wind_speed_ign_1400 (km/h)", "rh_min_d_plus1 (%)", "rh_min_d_plus2 (%)",
+            "rh_min_d_plus3 (%)", "wind_speed_max_d_plus1 (km/h)", "wind_speed_max_d_plus2 (km/h)",
+            "wind_speed_max_d_plus3 (km/h)", "precip_30d_post (mm)", "rh_min_30d_post (%)",
+            "wind_speed_max_30d_post (km/h)", "fire_risk_index", "fuel_dryness",
+            "hot_dry_windy", "terrain_wind", "gust_to_wind_ratio", "wind_slope_alignment",
+            "rh_drying_trend", "temp_heating_trend", "fuel_dryness_d_minus1",
+            "min_rh_3d_post", "max_gust_3d_post", "max_temp_3d_post", "precip_3d_post",
+            "spread_danger_index", "post_rh_drop", "precip_change_post_vs_prior",
+            "soil_drying_post", "extreme_fire_combo", "heat_wind_combo", "dryness_explosion",
+            "fire_acceleration", "wind_fire_drive", "heat_dryness_post",
+            "bad_conditions_persistence", "dry_windy_persistence", "terrain_fire_amplification",
+            "fuel_wind_dryness", "shock_index"
+        ]
     
     # Keep only features that exist
     available_features = [f for f in features if f in X.columns]

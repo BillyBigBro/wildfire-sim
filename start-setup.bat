@@ -10,7 +10,7 @@ echo.
 
 REM Step 1: Install dependencies
 echo Installing Python dependencies...
-pip install pandas numpy scikit-learn matplotlib flask joblib
+pip install pandas numpy scikit-learn matplotlib flask flask-cors joblib
 
 if errorlevel 1 (
     echo.
@@ -26,6 +26,7 @@ echo  Training RandomForest model (this may take 5-10 minutes)
 echo ========================================================
 echo.
 
+set NO_PLOTS=1
 python non-image-model.py
 
 if errorlevel 1 (

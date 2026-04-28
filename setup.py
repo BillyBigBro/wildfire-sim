@@ -40,13 +40,13 @@ def main():
     
     # Step 1: Install dependencies
     success = run_command(
-        "pip install pandas numpy scikit-learn matplotlib flask joblib",
+        "pip install pandas numpy scikit-learn matplotlib flask flask-cors joblib",
         "Installing Python dependencies"
     )
     
     if not success:
         print("\n❌ Failed to install dependencies. Please install them manually:")
-        print("   pip install pandas numpy scikit-learn matplotlib flask joblib")
+        print("   pip install pandas numpy scikit-learn matplotlib flask flask-cors joblib")
         return False
     
     # Step 2: Train the model

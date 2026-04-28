@@ -524,6 +524,24 @@ h1.is-fading {
   line-height: 1;
 }
 
+.prediction-output {
+  margin: 0.8rem 0 0;
+  text-align: center;
+  font-size: clamp(2rem, 4.2vw, 3rem);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  min-height: 1.2em;
+}
+
+.prediction-output span {
+  color: #cf3b2f;
+  font-weight: 600;
+}
+
+.prediction-output.is-hidden {
+  display: none;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;

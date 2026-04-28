@@ -158,19 +158,22 @@ print("RMSE (acres):", np.sqrt(mean_squared_error(true_acres, pred_acres)))
 
 importances = model.feature_importances_
 
-plt.figure(figsize=(8,8))
-plt.barh(features, importances)
-plt.title("Feature Importance")
-plt.xlabel("Importance")
-plt.show()
+show_plots = os.environ.get("NO_PLOTS", "").lower() not in {"1", "true", "yes"}
 
-plt.scatter(true_acres, pred_acres, alpha=0.5)
-plt.xscale("log")
-plt.yscale("log")
-plt.xlabel("True Acres")
-plt.ylabel("Predicted Acres")
-plt.title("Prediction vs True (Log Scale)")
-plt.show()
+if show_plots:
+    plt.figure(figsize=(8,8))
+    plt.barh(features, importances)
+    plt.title("Feature Importance")
+    plt.xlabel("Importance")
+    plt.show()
+
+    plt.scatter(true_acres, pred_acres, alpha=0.5)
+    plt.xscale("log")
+    plt.yscale("log")
+    plt.xlabel("True Acres")
+    plt.ylabel("Predicted Acres")
+    plt.title("Prediction vs True (Log Scale)")
+    plt.show()
 
 # ============================================
 # Show 5 random fires (Actual vs Predicted)
