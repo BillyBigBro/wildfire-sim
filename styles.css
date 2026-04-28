@@ -281,20 +281,29 @@ h1.is-fading {
   line-height: 1.2;
 }
 
-.weather-overlay {
+.weather-overlay-day0,
+.weather-overlay-day3 {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.62);
-  opacity: 0;
   pointer-events: none;
-  transition: opacity 360ms ease;
+  transition: transform 420ms ease, pointer-events 420ms ease;
 }
 
-.results-stage.is-weather-open .weather-overlay {
-  opacity: 1;
+.weather-overlay-day0 {
+  transform: translateX(-100%);
+}
+
+.weather-overlay-day3 {
+  transform: translateX(100%);
+}
+
+.weather-overlay-day0.is-weather-overlay-visible,
+.weather-overlay-day3.is-weather-overlay-visible {
+  transform: translateX(0);
   pointer-events: auto;
 }
 
@@ -307,8 +316,15 @@ h1.is-fading {
 }
 
 .weather-panel h3 {
-  margin: 0 0 0.3rem;
+  margin: 0 0 0.8rem;
   font-size: clamp(1.9rem, 3vw, 3.1rem);
+  font-weight: 400;
+  text-transform: lowercase;
+}
+
+.weather-panel h4 {
+  margin: 0 0 0.6rem;
+  font-size: clamp(1.3rem, 2.2vw, 1.8rem);
   font-weight: 400;
   text-transform: lowercase;
 }

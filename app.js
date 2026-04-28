@@ -34,9 +34,32 @@ let completedStrokes = [];
 let activeStageEl = null;
 let activeImageWrapEl = null;
 let resizeHandlerAttached = false;
+let currentWeatherDay = null; // Tracks which day's weather is being entered (0 or 3)
 
 let imagesData = [];
 let stateFeatures = [];
+
+// Weather data variables for Python script
+let weatherData = {
+  day0: {
+    temperature: null,
+    humidity: null,
+    precipitation: null,
+    soilMoisture: null,
+    windSpeed: null,
+    windGust: null,
+    windDirection: null,
+  },
+  day3: {
+    temperature: null,
+    humidity: null,
+    precipitation: null,
+    soilMoisture: null,
+    windSpeed: null,
+    windGust: null,
+    windDirection: null,
+  },
+};
 
 const dataReady = Promise.all([
   fetch("coordinates.csv").then((response) => response.text()),
@@ -204,50 +227,100 @@ function renderResults(stateTitle, rows) {
         </div>
         <p id="editor-error" class="editor-error" aria-live="polite"></p>
 
-        <section class="weather-overlay" id="weather-overlay" aria-label="Input weather conditions">
+        <section class="weather-overlay weather-overlay-day0" id="weather-overlay-day0" aria-label="Input weather conditions for day of ignition">
           <div class="weather-panel">
             <h3>input weather conditions:</h3>
+            <h4>day of ignition</h4>
             <div class="weather-grid">
               <div class="weather-col">
-                <label for="temperature-input">temperature (C)</label>
-                <input id="temperature-input" type="number" step="0.1" />
+                <label for="temperature-day0-input">temperature (C)</label>
+                <input id="temperature-day0-input" type="number" step="0.1" />
 
-                <label for="humidity-input">relative humidity (%)</label>
+                <label for="humidity-day0-input">relative humidity (%)</label>
                 <div class="slider-field">
-                  <input id="humidity-input" type="range" min="0" max="100" value="50" />
-                  <span id="humidity-value">50%</span>
+                  <input id="humidity-day0-input" type="range" min="0" max="100" value="50" />
+                  <span id="humidity-day0-value">50%</span>
                 </div>
 
-                <label for="precip-input">precipitation (mm)</label>
-                <input id="precip-input" type="number" step="0.1" min="0" />
+                <label for="precip-day0-input">precipitation (mm)</label>
+                <input id="precip-day0-input" type="number" step="0.1" min="0" />
 
-                <label for="soil-input">soil moisture (%)</label>
+                <label for="soil-day0-input">soil moisture (%)</label>
                 <div class="slider-field">
-                  <input id="soil-input" type="range" min="0" max="100" value="50" />
-                  <span id="soil-value">50%</span>
+                  <input id="soil-day0-input" type="range" min="0" max="100" value="50" />
+                  <span id="soil-day0-value">50%</span>
                 </div>
               </div>
 
               <div class="weather-col">
-                <label for="wind-speed-input">wind speed (km/h)</label>
-                <input id="wind-speed-input" type="number" step="0.1" min="0" />
+                <label for="wind-speed-day0-input">wind speed (km/h)</label>
+                <input id="wind-speed-day0-input" type="number" step="0.1" min="0" />
 
-                <label for="wind-gust-input">wind gust speed (km/h)</label>
-                <input id="wind-gust-input" type="number" step="0.1" min="0" />
+                <label for="wind-gust-day0-input">wind gust speed (km/h)</label>
+                <input id="wind-gust-day0-input" type="number" step="0.1" min="0" />
 
-                <label for="wind-direction-input">wind direction (deg.)</label>
+                <label for="wind-direction-day0-input">wind direction (deg.)</label>
                 <div class="wind-direction-picker">
-                  <div id="wind-direction-circle" class="wind-direction-circle" role="slider" aria-label="Wind direction" aria-valuemin="0" aria-valuemax="359" aria-valuenow="0" tabindex="0">
-                    <div id="wind-direction-line" class="wind-direction-line"></div>
+                  <div id="wind-direction-day0-circle" class="wind-direction-circle" role="slider" aria-label="Wind direction day of ignition" aria-valuemin="0" aria-valuemax="359" aria-valuenow="0" tabindex="0">
+                    <div id="wind-direction-day0-line" class="wind-direction-line"></div>
                     <span class="wind-direction-dot" aria-hidden="true"></span>
                   </div>
-                  <span class="wind-direction-readout"><span id="wind-direction-value">0</span>deg</span>
-                  <input id="wind-direction-input" type="hidden" value="0" />
+                  <span class="wind-direction-readout"><span id="wind-direction-day0-value">0</span>deg</span>
+                  <input id="wind-direction-day0-input" type="hidden" value="0" />
                 </div>
               </div>
             </div>
             <div class="weather-actions">
-              <button id="weather-done-button" type="button">done</button>
+              <button id="weather-done-button-day0" type="button">done</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="weather-overlay weather-overlay-day3" id="weather-overlay-day3" aria-label="Input weather conditions for 3 days after ignition">
+          <div class="weather-panel">
+            <h3>input weather conditions:</h3>
+            <h4>3 days after ignition</h4>
+            <div class="weather-grid">
+              <div class="weather-col">
+                <label for="temperature-day3-input">temperature (C)</label>
+                <input id="temperature-day3-input" type="number" step="0.1" />
+
+                <label for="humidity-day3-input">relative humidity (%)</label>
+                <div class="slider-field">
+                  <input id="humidity-day3-input" type="range" min="0" max="100" value="50" />
+                  <span id="humidity-day3-value">50%</span>
+                </div>
+
+                <label for="precip-day3-input">precipitation (mm)</label>
+                <input id="precip-day3-input" type="number" step="0.1" min="0" />
+
+                <label for="soil-day3-input">soil moisture (%)</label>
+                <div class="slider-field">
+                  <input id="soil-day3-input" type="range" min="0" max="100" value="50" />
+                  <span id="soil-day3-value">50%</span>
+                </div>
+              </div>
+
+              <div class="weather-col">
+                <label for="wind-speed-day3-input">wind speed (km/h)</label>
+                <input id="wind-speed-day3-input" type="number" step="0.1" min="0" />
+
+                <label for="wind-gust-day3-input">wind gust speed (km/h)</label>
+                <input id="wind-gust-day3-input" type="number" step="0.1" min="0" />
+
+                <label for="wind-direction-day3-input">wind direction (deg.)</label>
+                <div class="wind-direction-picker">
+                  <div id="wind-direction-day3-circle" class="wind-direction-circle" role="slider" aria-label="Wind direction 3 days after ignition" aria-valuemin="0" aria-valuemax="359" aria-valuenow="0" tabindex="0">
+                    <div id="wind-direction-day3-line" class="wind-direction-line"></div>
+                    <span class="wind-direction-dot" aria-hidden="true"></span>
+                  </div>
+                  <span class="wind-direction-readout"><span id="wind-direction-day3-value">0</span>deg</span>
+                  <input id="wind-direction-day3-input" type="hidden" value="0" />
+                </div>
+              </div>
+            </div>
+            <div class="weather-actions">
+              <button id="weather-done-button-day3" type="button">done</button>
             </div>
           </div>
         </section>
@@ -288,9 +361,18 @@ function setupEditorInteractions(rows) {
         return;
       }
 
+      // Set the current image for prediction
+      setCurrentImage(selected.imageName);
+
       editorImageEl.src = `images/${selected.imageName}`;
       stageEl.classList.add("is-editor-open");
-      stageEl.classList.remove("is-weather-open");
+
+      // Clear any visible weather overlays
+      const overlayDay0 = document.getElementById("weather-overlay-day0");
+      const overlayDay3 = document.getElementById("weather-overlay-day3");
+      if (overlayDay0) overlayDay0.classList.remove("is-weather-overlay-visible");
+      if (overlayDay3) overlayDay3.classList.remove("is-weather-overlay-visible");
+      currentWeatherDay = null;
 
       editorImageEl.onload = () => {
         initializeDrawingCanvas(imageWrapEl);
@@ -314,7 +396,11 @@ function setupEditorInteractions(rows) {
     }
 
     setEditorError("");
-    stageEl.classList.add("is-weather-open");
+    // Show the day 0 weather overlay
+    const overlayDay0 = document.getElementById("weather-overlay-day0");
+    if (overlayDay0) {
+      overlayDay0.classList.add("is-weather-overlay-visible");
+    }
   });
 
   setupWeatherControls(stageEl);
@@ -443,16 +529,79 @@ function undoLastStroke() {
 }
 
 function setupWeatherControls(stageEl) {
-  const humidityInput = document.getElementById("humidity-input");
-  const humidityValue = document.getElementById("humidity-value");
-  const soilInput = document.getElementById("soil-input");
-  const soilValue = document.getElementById("soil-value");
-  const directionCircle = document.getElementById("wind-direction-circle");
-  const directionLine = document.getElementById("wind-direction-line");
-  const directionValue = document.getElementById("wind-direction-value");
-  const directionInput = document.getElementById("wind-direction-input");
-  const weatherOverlay = document.getElementById("weather-overlay");
-  const weatherDoneButton = document.getElementById("weather-done-button");
+  const overlayDay0 = document.getElementById("weather-overlay-day0");
+  const overlayDay3 = document.getElementById("weather-overlay-day3");
+  const doneButtonDay0 = document.getElementById("weather-done-button-day0");
+  const doneButtonDay3 = document.getElementById("weather-done-button-day3");
+
+  // Setup sliders and direction controls for both days
+  setupWeatherDay("day0");
+  setupWeatherDay("day3");
+
+  // Initialize: show day0, hide day3
+  currentWeatherDay = 0;
+  if (overlayDay0) overlayDay0.classList.add("is-weather-overlay-visible");
+  if (overlayDay3) overlayDay3.classList.remove("is-weather-overlay-visible");
+
+  // Day 0 done button: save day0 data and show day3
+  if (doneButtonDay0) {
+    doneButtonDay0.addEventListener("click", () => {
+      saveWeatherDay("day0");
+      console.log("Day 0 weather saved:", weatherData.day0);
+
+      // Transition to day 3
+      if (overlayDay0) overlayDay0.classList.remove("is-weather-overlay-visible");
+      if (overlayDay3) overlayDay3.classList.add("is-weather-overlay-visible");
+      currentWeatherDay = 3;
+    });
+  }
+
+  // Day 3 done button: save day3 data and close
+  if (doneButtonDay3) {
+    doneButtonDay3.addEventListener("click", () => {
+      saveWeatherDay("day3");
+      console.log("Day 3 weather saved:", weatherData.day3);
+      console.log("All weather data:", weatherData);
+
+      // Close weather overlays
+      if (overlayDay0) overlayDay0.classList.remove("is-weather-overlay-visible");
+      if (overlayDay3) overlayDay3.classList.remove("is-weather-overlay-visible");
+      currentWeatherDay = null;
+
+      // Submit data to prediction API
+      submitWeatherDataForPrediction();
+    });
+  }
+
+  // Handle background overlay clicks to close
+  if (overlayDay0) {
+    overlayDay0.addEventListener("click", (event) => {
+      if (event.target === overlayDay0) {
+        overlayDay0.classList.remove("is-weather-overlay-visible");
+        currentWeatherDay = null;
+      }
+    });
+  }
+
+  if (overlayDay3) {
+    overlayDay3.addEventListener("click", (event) => {
+      if (event.target === overlayDay3) {
+        overlayDay3.classList.remove("is-weather-overlay-visible");
+        currentWeatherDay = null;
+      }
+    });
+  }
+}
+
+function setupWeatherDay(dayId) {
+  const humidityInput = document.getElementById(`humidity-${dayId}-input`);
+  const humidityValue = document.getElementById(`humidity-${dayId}-value`);
+  const soilInput = document.getElementById(`soil-${dayId}-input`);
+  const soilValue = document.getElementById(`soil-${dayId}-value`);
+  const directionCircle = document.getElementById(`wind-direction-${dayId}-circle`);
+  const directionLine = document.getElementById(`wind-direction-${dayId}-line`);
+  const directionValue = document.getElementById(`wind-direction-${dayId}-value`);
+  const directionInput = document.getElementById(`wind-direction-${dayId}-input`);
 
   if (!humidityInput || !humidityValue || !soilInput || !soilValue || !directionCircle || !directionLine || !directionValue || !directionInput) {
     return;
@@ -536,21 +685,37 @@ function setupWeatherControls(stageEl) {
     }
   });
 
-  if (weatherOverlay) {
-    weatherOverlay.addEventListener("click", (event) => {
-      if (event.target === weatherOverlay) {
-        stageEl.classList.remove("is-weather-open");
-      }
-    });
-  }
-
-  if (weatherDoneButton) {
-    weatherDoneButton.addEventListener("click", () => {
-      // Placeholder for future weather submission logic.
-    });
-  }
-
   setWindDirection(Number(directionInput.value));
+}
+
+function saveWeatherDay(dayId) {
+  const key = dayId === "day0" ? "day0" : "day3";
+  weatherData[key] = {
+    temperature: parseFloat(document.getElementById(`temperature-${dayId}-input`).value) || null,
+    humidity: parseFloat(document.getElementById(`humidity-${dayId}-input`).value) || null,
+    precipitation: parseFloat(document.getElementById(`precip-${dayId}-input`).value) || null,
+    soilMoisture: parseFloat(document.getElementById(`soil-${dayId}-input`).value) || null,
+    windSpeed: parseFloat(document.getElementById(`wind-speed-${dayId}-input`).value) || null,
+    windGust: parseFloat(document.getElementById(`wind-gust-${dayId}-input`).value) || null,
+    windDirection: parseInt(document.getElementById(`wind-direction-${dayId}-input`).value) || null,
+  };
+}
+
+function collectWeatherData() {
+  const days = ["day0", "day3"];
+
+  days.forEach((dayId) => {
+    const key = dayId === "day0" ? "day0" : "day3";
+    weatherData[key] = {
+      temperature: parseFloat(document.getElementById(`temperature-${dayId}-input`).value) || null,
+      humidity: parseFloat(document.getElementById(`humidity-${dayId}-input`).value) || null,
+      precipitation: parseFloat(document.getElementById(`precip-${dayId}-input`).value) || null,
+      soilMoisture: parseFloat(document.getElementById(`soil-${dayId}-input`).value) || null,
+      windSpeed: parseFloat(document.getElementById(`wind-speed-${dayId}-input`).value) || null,
+      windGust: parseFloat(document.getElementById(`wind-gust-${dayId}-input`).value) || null,
+      windDirection: parseInt(document.getElementById(`wind-direction-${dayId}-input`).value) || null,
+    };
+  });
 }
 
 function validateDrawingShape() {
