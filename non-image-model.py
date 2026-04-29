@@ -9,7 +9,7 @@ from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from sklearn.model_selection import train_test_split
 
 # Import the refactored model functions
-from model import engineer_features, MODEL_PATH, DATASET_PATH
+from model import engineer_features, MODEL_PATH, DATASET_PATH, build_prediction_input
 
 if not os.path.exists(DATASET_PATH):
     raise FileNotFoundError(
@@ -115,6 +115,8 @@ features = [
 
     #Other
     "extreme_fire_combo",
+    "extreme_heat_flag",
+    "heat_excess",
     "heat_wind_combo",
     "dryness_explosion",
     "fire_acceleration",
@@ -153,6 +155,11 @@ model = RandomForestRegressor(
 # Sample weighting: down-weight extremely large fires
 sample_weights = 1 / (1 + df.loc[X.index, "acres_burned_clipped"])
 weights_train = sample_weights.loc[X_train.index]
+
+heat_weight = 3.0
+heat_flags = df.loc[X.index, "extreme_heat_flag"] if "extreme_heat_flag" in df.columns else 0
+heat_multiplier = 1 + heat_weight * heat_flags
+weights_train = weights_train * heat_multiplier.loc[X_train.index]
 
 model.fit(X_train, y_train, sample_weight=weights_train)
 
@@ -214,6 +221,61 @@ for i, row in sample.iterrows():
     print(f"Predicted Acres: {row['pred_acres']:.2f}")
     print(f"Error:           {abs(row['true_acres'] - row['pred_acres']):.2f}")
     print("-" * 40)
+
+    # ============================================
+    # Check extreme heat impact vs baseline
+    # ============================================
+
+    lat_median = df["lat"].median()
+    lon_median = df["lon"].median()
+
+    baseline_day0 = {}
+    baseline_day3 = {}
+
+    extreme_day0 = {"temp_c": 55}
+    extreme_day3 = {"temp_c": 55}
+
+    X_base = build_prediction_input(lat_median, lon_median, baseline_day0, baseline_day3)
+    X_extreme = build_prediction_input(lat_median, lon_median, extreme_day0, extreme_day3)
+
+    X_base = engineer_features(X_base)
+    X_extreme = engineer_features(X_extreme)
+
+    if hasattr(model, "feature_names_in_"):
+        pred_features = list(model.feature_names_in_)
+    else:
+        pred_features = features
+
+    for f in pred_features:
+        if f not in X_base.columns:
+            X_base[f] = 0
+        if f not in X_extreme.columns:
+            X_extreme[f] = 0
+
+    X_base = X_base[pred_features]
+    X_extreme = X_extreme[pred_features]
+
+    base_qt = model.predict(X_base)[0]
+    extreme_qt = model.predict(X_extreme)[0]
+
+    base_log = qt.inverse_transform(np.array([[base_qt]])).ravel()[0]
+    extreme_log = qt.inverse_transform(np.array([[extreme_qt]])).ravel()[0]
+
+    base_acres = np.expm1(base_log)
+    extreme_acres = np.expm1(extreme_log)
+
+    if base_acres > 0:
+        pct_increase = ((extreme_acres / base_acres) - 1) * 100
+    else:
+        pct_increase = float("inf")
+
+    print("\n===== EXTREME HEAT IMPACT CHECK =====")
+    print(f"Baseline acres (default weather): {base_acres:.2f}")
+    print(f"Extreme heat acres (55°C):        {extreme_acres:.2f}")
+    if pct_increase == float("inf"):
+        print("Increase vs baseline: infinite (baseline ~0)")
+    else:
+        print(f"Increase vs baseline: {pct_increase:.1f}%")
 
 # ============================================
 # Save trained model for later use

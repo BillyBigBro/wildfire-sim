@@ -168,6 +168,17 @@ def engineer_features(df):
     max_temp_cols = ["temp_max_d_plus1 (°C)", "temp_max_d_plus2 (°C)", "temp_max_d_plus3 (°C)"]
     if all(col in df.columns for col in max_temp_cols):
         df["max_temp_3d_post"] = df[max_temp_cols].max(axis=1)
+
+    # Extreme heat indicators (ignition + post-ignition temps)
+    temp_cols = []
+    if "temp_ign_1400 (°C)" in df.columns:
+        temp_cols.append("temp_ign_1400 (°C)")
+    temp_cols.extend([col for col in max_temp_cols if col in df.columns])
+
+    if temp_cols:
+        max_temp_any = df[temp_cols].max(axis=1)
+        df["extreme_heat_flag"] = (max_temp_any >= 50).astype(int)
+        df["heat_excess"] = (max_temp_any - 50).clip(lower=0)
     
     precip_cols = ["precip_sum_d_plus1 (mm)", "precip_sum_d_plus2 (mm)", "precip_sum_d_plus3 (mm)"]
     if all(col in df.columns for col in precip_cols):
@@ -420,17 +431,39 @@ def predict_acres_burned(lat, lon, day0_weather, day3_weather, model_path=MODEL_
     
     X_pred = X_pred[features]
     
-    # Predict
-    pred_value = model.predict(X_pred)[0]
+    def predict_acres_from_features(feature_df):
+        pred_value_local = model.predict(feature_df)[0]
+        if y_transformer is not None:
+            log_acres_local = y_transformer.inverse_transform(
+                np.array([[pred_value_local]])
+            ).ravel()[0]
+            acres_local = np.expm1(log_acres_local)
+        else:
+            log_acres_local = pred_value_local
+            acres_local = 10**log_acres_local - 1
+        return acres_local, log_acres_local
 
-    if y_transformer is not None:
-        log_acres_pred = y_transformer.inverse_transform(
-            np.array([[pred_value]])
-        ).ravel()[0]
-        acres_pred = np.expm1(log_acres_pred)
-    else:
-        log_acres_pred = pred_value
-        acres_pred = 10**log_acres_pred - 1
+    # Predict
+    acres_pred, log_acres_pred = predict_acres_from_features(X_pred)
+
+    # Enforce extreme-heat impact (>=50C in ignition or day-3 temps)
+    temp_ign = day0_weather.get("temp_c", 25)
+    temp_day3 = day3_weather.get("temp_c", 25)
+    extreme_heat = max(temp_ign, temp_day3) >= 50
+
+    if extreme_heat:
+        # Baseline uses default weather inputs for the same location
+        baseline_input = build_prediction_input(lat, lon, {}, {})
+        baseline_input = engineer_features(baseline_input)
+
+        for f in features:
+            if f not in baseline_input.columns:
+                baseline_input[f] = 0
+
+        baseline_input = baseline_input[features]
+        baseline_acres, _ = predict_acres_from_features(baseline_input)
+
+        acres_pred = max(acres_pred, 1.75 * baseline_acres)
     
     return {
         "predicted_acres": max(0, acres_pred),
