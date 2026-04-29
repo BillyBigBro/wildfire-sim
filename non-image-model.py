@@ -20,7 +20,16 @@ df = pd.read_csv(DATASET_PATH)
 
 df = df.dropna(subset=["acres_burned"])
 
-df["log_acres"] = np.log10(df["acres_burned"] + 100)
+# Target engineering: clip extreme fires, then log1p + quantile transform
+from sklearn.preprocessing import QuantileTransformer
+
+clip_max = df["acres_burned"].quantile(0.995)
+df["acres_burned_clipped"] = df["acres_burned"].clip(upper=clip_max)
+
+df["log_acres"] = np.log1p(df["acres_burned_clipped"])
+
+qt = QuantileTransformer(output_distribution="normal", random_state=42)
+df["target_qt"] = qt.fit_transform(df[["log_acres"]])
 
 # Feature Engineering (using refactored function)
 df = engineer_features(df)
@@ -124,7 +133,7 @@ features = [f for f in features if f in df.columns]
 
 
 X = df[features]
-y = df["log_acres"]
+y = df["target_qt"]
 
 # RandomForest Regression
 
@@ -141,13 +150,19 @@ model = RandomForestRegressor(
     n_jobs=-1
 )
 
-model.fit(X_train, y_train)
+# Sample weighting: down-weight extremely large fires
+sample_weights = 1 / (1 + df.loc[X.index, "acres_burned_clipped"])
+weights_train = sample_weights.loc[X_train.index]
 
-pred_log = model.predict(X_test)
+model.fit(X_train, y_train, sample_weight=weights_train)
+
+pred_qt = model.predict(X_test)
 
 # Convert back to acres
-pred_acres = 10**pred_log - 1
-true_acres = 10**y_test - 1
+pred_log = qt.inverse_transform(pred_qt.reshape(-1, 1)).ravel()
+pred_acres = np.expm1(pred_log)
+true_log = qt.inverse_transform(y_test.to_numpy().reshape(-1, 1)).ravel()
+true_acres = np.expm1(true_log)
 
 print("R^2 (log scale):", r2_score(y_test, pred_log))
 print("MAE (log scale):", mean_absolute_error(y_test, pred_log))
@@ -185,7 +200,7 @@ results_df["true_acres"] = true_acres
 results_df["pred_acres"] = pred_acres
 
 # Optional: include log values too
-results_df["true_log"] = y_test
+results_df["true_log"] = true_log
 results_df["pred_log"] = pred_log
 
 # Sample 5 random fires
@@ -205,7 +220,13 @@ for i, row in sample.iterrows():
 # ============================================
 
 print(f"\nSaving model to {MODEL_PATH}...")
-joblib.dump(model, MODEL_PATH)
+model_bundle = {
+    "model": model,
+    "y_transformer": qt,
+    "target_mode": "log1p+quantile",
+    "clip_max": float(clip_max),
+}
+joblib.dump(model_bundle, MODEL_PATH)
 print(f"Model saved successfully!")
 
 print("\n✓ Training complete. Model is ready for predictions via model.predict_acres_burned()")

@@ -369,7 +369,13 @@ def predict_acres_burned(lat, lon, day0_weather, day3_weather, model_path=MODEL_
             "predicted_acres": None,
         }
     
-    model = joblib.load(model_path)
+    loaded = joblib.load(model_path)
+    if isinstance(loaded, dict) and "model" in loaded:
+        model = loaded["model"]
+        y_transformer = loaded.get("y_transformer")
+    else:
+        model = loaded
+        y_transformer = None
     
     # Build prediction input
     X = build_prediction_input(lat, lon, day0_weather, day3_weather)
@@ -415,8 +421,16 @@ def predict_acres_burned(lat, lon, day0_weather, day3_weather, model_path=MODEL_
     X_pred = X_pred[features]
     
     # Predict
-    log_acres_pred = model.predict(X_pred)[0]
-    acres_pred = 10**log_acres_pred - 1
+    pred_value = model.predict(X_pred)[0]
+
+    if y_transformer is not None:
+        log_acres_pred = y_transformer.inverse_transform(
+            np.array([[pred_value]])
+        ).ravel()[0]
+        acres_pred = np.expm1(log_acres_pred)
+    else:
+        log_acres_pred = pred_value
+        acres_pred = 10**log_acres_pred - 1
     
     return {
         "predicted_acres": max(0, acres_pred),
