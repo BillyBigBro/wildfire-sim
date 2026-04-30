@@ -11,6 +11,7 @@ from flask_cors import CORS
 import csv
 import os
 from model import predict_acres_burned
+from deepfire_infer import PREDICTOR
 
 app = Flask(__name__)
 CORS(app)
@@ -111,6 +112,27 @@ def predict():
 def health():
     """Health check endpoint"""
     return jsonify({"status": "ok"}), 200
+
+
+@app.route("/predict-image", methods=["POST"])
+def predict_image():
+    """Predict fire spread overlay image from cached model and user mask."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No JSON data provided"}), 400
+
+        image_name = data.get("image_name")
+        mask_png = data.get("mask_png")
+
+        if not image_name or not mask_png:
+            return jsonify({"error": "Missing required fields: image_name, mask_png"}), 400
+
+        overlay_png = PREDICTOR.predict_overlay(image_name, mask_png)
+        return jsonify({"overlay_png": overlay_png}), 200
+
+    except Exception as e:
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 
 if __name__ == "__main__":

@@ -79,11 +79,49 @@ async function submitWeatherDataForPrediction() {
 
     // Display result to user
     displayPredictionResult(result);
+    submitImagePrediction();
   } catch (error) {
     console.error("Network error:", error);
     alert(
       "Network error: Could not reach prediction server. Is server.py running?"
     );
+  }
+}
+
+async function submitImagePrediction() {
+  if (!currentImageName || typeof getFireMaskDataUrl !== "function") {
+    return;
+  }
+
+  const maskDataUrl = getFireMaskDataUrl();
+  if (!maskDataUrl) {
+    return;
+  }
+
+  try {
+    const response = await fetch("http://localhost:5000/predict-image", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        image_name: currentImageName,
+        mask_png: maskDataUrl,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error("Image prediction failed:", error);
+      return;
+    }
+
+    const result = await response.json();
+    if (result.overlay_png && typeof showPredictionImage === "function") {
+      showPredictionImage(result.overlay_png);
+    }
+  } catch (error) {
+    console.error("Network error (image prediction):", error);
   }
 }
 

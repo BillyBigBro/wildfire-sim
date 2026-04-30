@@ -2,23 +2,120 @@ const titleEl = document.getElementById("page-title");
 const selectEl = document.getElementById("state-select");
 const resultsEl = document.getElementById("results");
 
-const STATES = [
-  "Arizona",
-  "California",
-  "Colorado",
-  "Florida",
-  "Georgia",
-  "Idaho",
-  "Kansas",
-  "Montana",
-  "Nevada",
-  "New Mexico",
-  "Oregon",
-  "Texas",
-  "Utah",
-  "Washington",
-  "Wyoming",
-];
+const ALLOWED_IMAGES = new Set([
+  "21693566.png",
+  "21748801.png",
+  "21751303.png",
+  "21751305.png",
+  "21751309.png",
+  "21804582.png",
+  "21804884.png",
+  "21804985.png",
+  "21889717.png",
+  "21889750.png",
+  "21889763.png",
+  "21889779.png",
+  "21889943.png",
+  "21889953.png",
+  "21889992.png",
+  "21889994.png",
+  "21890003.png",
+  "21890009.png",
+  "21890013.png",
+  "21890024.png",
+  "21890056.png",
+  "21890072.png",
+  "21890160.png",
+  "21890502.png",
+  "21890524.png",
+  "21997770.png",
+  "21997828.png",
+  "21998023.png",
+  "21998095.png",
+  "21998230.png",
+  "21998264.png",
+  "21998287.png",
+  "21998313.png",
+  "21999381.png",
+  "22141509.png",
+  "22141596.png",
+  "22343661.png",
+  "22343688.png",
+  "22712904.png",
+  "22712973.png",
+  "22938749.png",
+  "23036806.png",
+  "23036871.png",
+  "23159836.png",
+  "23160475.png",
+  "23300669.png",
+  "23410594.png",
+  "23860939.png",
+  "24103557.png",
+  "24103571.png",
+  "24103581.png",
+  "24103611.png",
+  "24104631.png",
+  "24191347.png",
+  "24191376.png",
+  "24191393.png",
+  "24191418.png",
+  "24191427.png",
+  "24332592.png",
+  "24332608.png",
+  "24332622.png",
+  "24332647.png",
+  "24332676.png",
+  "24332702.png",
+  "24332704.png",
+  "24332732.png",
+  "24332746.png",
+  "24332760.png",
+  "24332763.png",
+  "24332764.png",
+  "24332783.png",
+  "24332787.png",
+  "24332801.png",
+  "24332880.png",
+  "24332939.png",
+  "24332956.png",
+  "24333000.png",
+  "24333012.png",
+  "24333033.png",
+  "24333039.png",
+  "24333270.png",
+  "24333277.png",
+  "24333279.png",
+  "24461320.png",
+  "24461328.png",
+  "24461421.png",
+  "24461607.png",
+  "24461771.png",
+  "24461899.png",
+  "24461996.png",
+  "24462263.png",
+  "24462335.png",
+  "24462488.png",
+  "24462819.png",
+  "24462847.png",
+  "24463187.png",
+  "US_2021_AZ3345510938920210616.png",
+  "US_2021_AZ3368910927620210616.png",
+  "US_2021_CA3451712013120211011.png",
+  "US_2021_CA3568711855020210818.png",
+  "US_2021_CA3604711863120210910.png",
+  "US_2021_CA3627811855020210815.png",
+  "US_2021_CA3658211879520210912.png",
+  "US_2021_CA4086312235520210630.png",
+  "US_2021_FL2521008104520210308.png",
+  "US_2021_ID4453211532920210810.png",
+  "US_2021_ID4558511544420210705.png",
+  "US_2021_ID4663811466720210707.png",
+  "US_2021_ID4762711608320210708.png",
+  "US_2021_MT4568311385420210708.png",
+  "US_2021_MT4579011310120210708.png",
+  "US_2021_NM3340210587120210426.png",
+]);
 
 const MAX_IMAGES = 6;
 const CENTER_PROMPT = "draw fire shape";
@@ -35,9 +132,12 @@ let activeStageEl = null;
 let activeImageWrapEl = null;
 let resizeHandlerAttached = false;
 let currentWeatherDay = null; // Tracks which day's weather is being entered (0 or 3)
+let predictedImageEl = null;
+let predictedImageWrapEl = null;
 
 let imagesData = [];
 let stateFeatures = [];
+let availableStates = [];
 
 // Weather data variables for Python script
 let weatherData = {
@@ -68,8 +168,12 @@ const dataReady = Promise.all([
   ),
 ])
   .then(([csvText, geoJson]) => {
-    stateFeatures = geoJson.features.filter((feature) => STATES.includes(feature.properties.name));
-    imagesData = parseCsv(csvText);
+    stateFeatures = geoJson.features;
+    imagesData = parseCsv(csvText).filter((row) => ALLOWED_IMAGES.has(row.imageName));
+    const stateSet = new Set(imagesData.map((row) => row.state).filter(Boolean));
+    availableStates = Array.from(stateSet).sort();
+    stateFeatures = geoJson.features.filter((feature) => stateSet.has(feature.properties.name));
+    populateStateOptions(availableStates);
   })
   .catch(() => {
     resultsEl.innerHTML = '<p class="results-error">Unable to load data files.</p>';
@@ -88,6 +192,13 @@ selectEl.addEventListener("change", async (event) => {
   const chosen = shuffle(matches).slice(0, MAX_IMAGES);
   renderResults(selectedState.toLowerCase(), chosen);
 });
+
+function populateStateOptions(states) {
+  selectEl.innerHTML = `
+    <option value="" selected disabled>Choose a state</option>
+    ${states.map((state) => `<option>${state}</option>`).join("")}
+  `;
+}
 
 function parseCsv(csvText) {
   const lines = csvText.trim().split(/\r?\n/);
@@ -214,6 +325,7 @@ function renderResults(stateTitle, rows) {
           <img id="editor-image" src="" alt="Selected satellite image" />
           <canvas id="draw-canvas"></canvas>
           <span class="target-square" aria-hidden="true"></span>
+          <img id="prediction-image" class="prediction-image is-hidden" alt="Predicted fire spread overlay" />
         </div>
         <div class="editor-toolbar" role="toolbar" aria-label="Drawing tools">
           <div class="editor-tools-right">
@@ -343,6 +455,8 @@ function setupEditorInteractions(rows) {
   const editorImageEl = document.getElementById("editor-image");
   const undoToolBtn = document.getElementById("undo-tool");
   const doneToolBtn = document.getElementById("done-tool");
+  predictedImageEl = document.getElementById("prediction-image");
+  predictedImageWrapEl = imageWrapEl;
 
   if (!stageEl || !imageWrapEl || !editorImageEl) {
     return;
@@ -366,6 +480,13 @@ function setupEditorInteractions(rows) {
 
       editorImageEl.src = `images/${selected.imageName}`;
       stageEl.classList.add("is-editor-open");
+
+      ensurePredictionElements();
+
+      if (predictedImageEl) {
+        predictedImageEl.src = "";
+        predictedImageEl.classList.add("is-hidden");
+      }
 
       // Clear any visible weather overlays
       const overlayDay0 = document.getElementById("weather-overlay-day0");
@@ -418,6 +539,15 @@ function setupEditorInteractions(rows) {
       initializeDrawingCanvas(activeImageWrapEl);
     });
     resizeHandlerAttached = true;
+  }
+}
+
+function ensurePredictionElements() {
+  if (!predictedImageEl) {
+    predictedImageEl = document.getElementById("prediction-image");
+  }
+  if (!predictedImageWrapEl) {
+    predictedImageWrapEl = document.getElementById("editor-image-wrap");
   }
 }
 
@@ -739,6 +869,54 @@ function validateDrawingShape() {
   }
 
   return { isValid: true, message: "" };
+}
+
+function getFireMaskDataUrl() {
+  if (!drawCanvas || completedStrokes.length === 0) {
+    return null;
+  }
+
+  const closedStrokes = completedStrokes.filter((stroke) => isStrokeClosed(stroke));
+  if (closedStrokes.length === 0) {
+    return null;
+  }
+
+  const rect = drawCanvas.getBoundingClientRect();
+  const maskCanvas = document.createElement("canvas");
+  maskCanvas.width = Math.max(1, Math.floor(rect.width));
+  maskCanvas.height = Math.max(1, Math.floor(rect.height));
+
+  const ctx = maskCanvas.getContext("2d");
+  ctx.fillStyle = "black";
+  ctx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
+
+  ctx.fillStyle = "white";
+  closedStrokes.forEach((stroke) => {
+    ctx.beginPath();
+    stroke.forEach((point, index) => {
+      if (index === 0) {
+        ctx.moveTo(point.x, point.y);
+      } else {
+        ctx.lineTo(point.x, point.y);
+      }
+    });
+    ctx.closePath();
+    ctx.fill();
+  });
+
+  return maskCanvas.toDataURL("image/png");
+}
+
+function showPredictionImage(dataUrl) {
+  if (!predictedImageEl || !predictedImageWrapEl) {
+    ensurePredictionElements();
+  }
+
+  if (!predictedImageEl || !predictedImageWrapEl) {
+    return;
+  }
+  predictedImageEl.src = dataUrl;
+  predictedImageEl.classList.remove("is-hidden");
 }
 
 function isStrokeClosed(stroke) {

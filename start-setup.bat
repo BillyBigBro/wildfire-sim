@@ -10,7 +10,7 @@ echo.
 
 REM Step 1: Install dependencies
 echo Installing Python dependencies...
-pip install pandas numpy scikit-learn matplotlib flask flask-cors joblib
+pip install pandas numpy scikit-learn matplotlib flask flask-cors joblib torch pillow scipy
 
 if errorlevel 1 (
     echo.
