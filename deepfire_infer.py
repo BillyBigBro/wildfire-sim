@@ -17,6 +17,10 @@ SPATIAL_SIZE = 128
 FIRE_PEAK = 1.0
 FIRE_SIGMA = 5.0
 VEGETATION_CLASSES = {5, 7, 11}
+OVERLAY_THRESHOLD_HIGH = 0.6
+OVERLAY_THRESHOLD_MED = 0.3
+IGNITION_THRESHOLD = 0.5
+OVERLAY_OPACITY = 0.69
 
 
 def _load_mask(mask_data_url):
@@ -245,34 +249,38 @@ class DeepFirePredictor:
         if vegetation_mask.max() > 0:
             pred_np = pred_np * vegetation_mask
 
-        # Increase visible spread and emphasize higher probabilities
-        pred_np = np.clip(pred_np * 1.6, 0, 1)
-        pred_np = np.power(pred_np, 0.65)
-
         base_image = _load_satellite(image_name)
         base_size = base_image.size
-        pred_img = Image.fromarray((pred_np * 255).astype(np.uint8)).resize(base_size, Image.BILINEAR)
-        pred_arr = np.asarray(pred_img, dtype=np.float32) / 255.0
+
+        def resize_binary(mask_2d):
+            img = Image.fromarray((mask_2d * 255).astype(np.uint8)).resize(base_size, Image.BILINEAR)
+            return (np.asarray(img, dtype=np.float32) / 255.0 >= 0.5).astype(np.float32)
+
+        # Three-tier zones: ignition (red) > high spread (orange) > medium spread (yellow)
+        ignition = resize_binary((mask_np >= IGNITION_THRESHOLD).astype(np.float32))
+        high = resize_binary((pred_np >= OVERLAY_THRESHOLD_HIGH).astype(np.float32))
+        med = resize_binary(((pred_np >= OVERLAY_THRESHOLD_MED) & (pred_np < OVERLAY_THRESHOLD_HIGH)).astype(np.float32))
+
+        # Each zone excludes higher-priority zones so colors don't bleed
+        high = high * (1 - ignition)
+        med = med * (1 - ignition) * (1 - high)
 
         base_arr = np.asarray(base_image, dtype=np.float32) / 255.0
+        overlay = base_arr.copy()
 
-        # Emphasize vegetation ignition with an orange/red overlay
-        # Aim to highlight ~50% of vegetation by shifting around median
-        if vegetation_mask.max() > 0:
-            veg_vals = pred_np[vegetation_mask > 0]
-            median = float(np.quantile(veg_vals, 0.5))
-        else:
-            median = 0.5
+        # Yellow: medium spread (0.4–0.6)
+        a = (med * OVERLAY_OPACITY)[..., None]
+        overlay = overlay * (1 - a) + np.array([1.0, 0.88, 0.0]) * a
 
-        pred_adj = np.clip((pred_arr - median) / max(1e-6, 1 - median), 0, 1)
-        heat = np.zeros_like(base_arr)
-        heat[..., 0] = 1.0
-        heat[..., 1] = 0.45
-        heat[..., 2] = 0.08
+        # Orange: high spread (>= 0.6)
+        a = (high * OVERLAY_OPACITY)[..., None]
+        overlay = overlay * (1 - a) + np.array([1.0, 0.45, 0.08]) * a
 
-        alpha = np.clip(pred_adj * 0.95, 0, 0.95)[..., None]
-        overlay = base_arr * (1 - alpha) + heat * alpha
+        # Red: ignition zone (user-drawn origin)
+        a = (ignition * OVERLAY_OPACITY)[..., None]
+        overlay = overlay * (1 - a) + np.array([0.92, 0.08, 0.08]) * a
 
+        overlay = np.clip(overlay, 0, 1)
         overlay_img = Image.fromarray((overlay * 255).astype(np.uint8))
         buffer = io.BytesIO()
         overlay_img.save(buffer, format="PNG")

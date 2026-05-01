@@ -77,9 +77,11 @@ async function submitWeatherDataForPrediction() {
     const result = await response.json();
     console.log("Prediction result:", result);
 
-    // Display result to user
+    // Capture mask before displayPredictionResult hides the canvas
+    const maskDataUrl = typeof getFireMaskDataUrl === "function" ? getFireMaskDataUrl() : null;
+
     displayPredictionResult(result);
-    submitImagePrediction();
+    submitImagePrediction(maskDataUrl);
   } catch (error) {
     console.error("Network error:", error);
     alert(
@@ -88,12 +90,11 @@ async function submitWeatherDataForPrediction() {
   }
 }
 
-async function submitImagePrediction() {
-  if (!currentImageName || typeof getFireMaskDataUrl !== "function") {
+async function submitImagePrediction(maskDataUrl) {
+  if (!currentImageName) {
     return;
   }
 
-  const maskDataUrl = getFireMaskDataUrl();
   if (!maskDataUrl) {
     return;
   }
@@ -136,6 +137,9 @@ function displayPredictionResult(result) {
     output.classList.remove("is-hidden");
   }
 
-  // Optionally, log to console for debugging
+  if (typeof showPredictionResultView === "function") {
+    showPredictionResultView();
+  }
+
   console.log("Full prediction data:", result);
 }

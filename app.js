@@ -320,11 +320,10 @@ function renderResults(stateTitle, rows) {
 
       <section class="editor-view" id="editor-view" aria-label="Draw fire shape editor">
         <h2>${CENTER_PROMPT}</h2>
-        <p class="editor-subtitle">(shape must encompass the square)</p>
+        <p class="editor-subtitle">(draw a closed shape around the ignition area)</p>
         <div class="editor-image-wrap" id="editor-image-wrap">
           <img id="editor-image" src="" alt="Selected satellite image" />
           <canvas id="draw-canvas"></canvas>
-          <span class="target-square" aria-hidden="true"></span>
           <img id="prediction-image" class="prediction-image is-hidden" alt="Predicted fire spread overlay" />
         </div>
         <div class="editor-toolbar" role="toolbar" aria-label="Drawing tools">
@@ -338,6 +337,7 @@ function renderResults(stateTitle, rows) {
           </div>
         </div>
         <p id="editor-error" class="editor-error" aria-live="polite"></p>
+        <p id="prediction-output" class="prediction-output is-hidden" aria-live="polite"></p>
 
         <section class="weather-overlay weather-overlay-day0" id="weather-overlay-day0" aria-label="Input weather conditions for day of ignition">
           <div class="weather-panel">
@@ -480,6 +480,13 @@ function setupEditorInteractions(rows) {
 
       editorImageEl.src = `images/${selected.imageName}`;
       stageEl.classList.add("is-editor-open");
+      stageEl.classList.remove("is-prediction-done");
+
+      const predOutput = document.getElementById("prediction-output");
+      if (predOutput) {
+        predOutput.classList.add("is-hidden");
+        predOutput.innerHTML = "";
+      }
 
       ensurePredictionElements();
 
@@ -548,6 +555,13 @@ function ensurePredictionElements() {
   }
   if (!predictedImageWrapEl) {
     predictedImageWrapEl = document.getElementById("editor-image-wrap");
+  }
+}
+
+function showPredictionResultView() {
+  animateTitleSwap("predicted fire");
+  if (activeStageEl) {
+    activeStageEl.classList.add("is-prediction-done");
   }
 }
 
@@ -858,16 +872,6 @@ function validateDrawingShape() {
     };
   }
 
-  const centerPoint = getCanvasCenterPoint();
-  const containsCenter = closedStrokes.some((stroke) => isPointInsideStrokePolygon(centerPoint, stroke));
-
-  if (!containsCenter) {
-    return {
-      isValid: false,
-      message: "Error: shape must encapsulate the red square.",
-    };
-  }
-
   return { isValid: true, message: "" };
 }
 
@@ -935,31 +939,6 @@ function isStrokeClosed(stroke) {
   return closeDistance <= closureThreshold;
 }
 
-function getCanvasCenterPoint() {
-  const rect = drawCanvas ? drawCanvas.getBoundingClientRect() : { width: 0, height: 0 };
-  return {
-    x: rect.width / 2,
-    y: rect.height / 2,
-  };
-}
-
-function isPointInsideStrokePolygon(point, stroke) {
-  let inside = false;
-
-  for (let i = 0, j = stroke.length - 1; i < stroke.length; j = i, i += 1) {
-    const xi = stroke[i].x;
-    const yi = stroke[i].y;
-    const xj = stroke[j].x;
-    const yj = stroke[j].y;
-
-    const intersects = yi > point.y !== yj > point.y && point.x < ((xj - xi) * (point.y - yi)) / (yj - yi) + xi;
-    if (intersects) {
-      inside = !inside;
-    }
-  }
-
-  return inside;
-}
 
 function setEditorError(message) {
   const editorErrorEl = document.getElementById("editor-error");
