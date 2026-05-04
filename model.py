@@ -16,7 +16,7 @@ import os
 # ============================================================================
 
 # Path to the full dataset with terrain and weather features
-DATASET_PATH = "mtbs_dataset(GoogleEarth+OpenMeteo).csv"
+DATASET_PATH = "data/mtbs_dataset.csv"
 MODEL_PATH = "wildfire_model.pkl"
 TERRAIN_CACHE = None  # Will be loaded once
 

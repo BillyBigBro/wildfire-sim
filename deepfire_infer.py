@@ -15,12 +15,12 @@ MODEL_PATH = os.path.join("models", "deepfire_frpinput_best.pt")
 
 SPATIAL_SIZE = 128
 FIRE_PEAK = 1.0
-FIRE_SIGMA = 5.0
+FIRE_SIGMA = 8.0
 VEGETATION_CLASSES = {5, 7, 11}
-OVERLAY_THRESHOLD_HIGH = 0.6
-OVERLAY_THRESHOLD_MED = 0.3
+OVERLAY_THRESHOLD = 0.4
 IGNITION_THRESHOLD = 0.5
-OVERLAY_OPACITY = 0.69
+OVERLAY_OPACITY = 0.84
+NUM_FORECAST_DAYS = 3
 
 
 def _load_mask(mask_data_url):
@@ -231,23 +231,34 @@ class DeepFirePredictor:
     def predict_overlay(self, image_name, mask_data_url):
         image_base = os.path.splitext(image_name)[0]
         sample = self._load_cached_sample(image_base)
-        viirs_np = sample["viirs"].squeeze(0).numpy()
+        viirs_base = sample["viirs"].squeeze(0).numpy().copy()
         lulc_t = sample["lulc"]
         lulc_np = lulc_t.cpu().numpy() if hasattr(lulc_t, "cpu") else np.array(lulc_t)
 
-        mask_np = _load_mask(mask_data_url)
-
-        if viirs_np.shape[0] > 3:
-            viirs_np[3] = mask_np
-        else:
-            viirs_np[-1] = mask_np
-
-        pred_np = self._predict(viirs_np, lulc_t)
-        pred_np = np.clip(pred_np, 0, 1)
-
         vegetation_mask = np.isin(lulc_np, list(VEGETATION_CLASSES)).astype(np.float32)
-        if vegetation_mask.max() > 0:
-            pred_np = pred_np * vegetation_mask
+        ignition_mask = _load_mask(mask_data_url)
+
+        # Run model NUM_FORECAST_DAYS times, feeding each day's spread back as next fire mask
+        day_preds = []
+        current_mask = ignition_mask.copy()
+        for _ in range(NUM_FORECAST_DAYS):
+            viirs_np = viirs_base.copy()
+            if viirs_np.shape[0] > 3:
+                viirs_np[3] = current_mask
+            else:
+                viirs_np[-1] = current_mask
+
+            pred_np = np.clip(self._predict(viirs_np, lulc_t), 0, 1)
+            if vegetation_mask.max() > 0:
+                pred_np = pred_np * vegetation_mask
+            day_preds.append(pred_np)
+
+            # Threshold high-confidence pixels, blur into FRP-like signal for next day
+            next_binary = (pred_np >= OVERLAY_THRESHOLD).astype(np.float32)
+            if next_binary.max() > 0:
+                next_binary = gaussian_filter(next_binary, sigma=FIRE_SIGMA)
+                next_binary = next_binary / max(next_binary.max(), 1e-6) * FIRE_PEAK
+            current_mask = next_binary
 
         base_image = _load_satellite(image_name)
         base_size = base_image.size
@@ -256,29 +267,31 @@ class DeepFirePredictor:
             img = Image.fromarray((mask_2d * 255).astype(np.uint8)).resize(base_size, Image.BILINEAR)
             return (np.asarray(img, dtype=np.float32) / 255.0 >= 0.5).astype(np.float32)
 
-        # Three-tier zones: ignition (red) > high spread (orange) > medium spread (yellow)
-        ignition = resize_binary((mask_np >= IGNITION_THRESHOLD).astype(np.float32))
-        high = resize_binary((pred_np >= OVERLAY_THRESHOLD_HIGH).astype(np.float32))
-        med = resize_binary(((pred_np >= OVERLAY_THRESHOLD_MED) & (pred_np < OVERLAY_THRESHOLD_HIGH)).astype(np.float32))
+        ignition = resize_binary((ignition_mask >= IGNITION_THRESHOLD).astype(np.float32))
+        day1 = resize_binary((day_preds[0] >= OVERLAY_THRESHOLD).astype(np.float32))
+        day2 = resize_binary((day_preds[1] >= OVERLAY_THRESHOLD).astype(np.float32))
+        day3 = resize_binary((day_preds[2] >= OVERLAY_THRESHOLD).astype(np.float32))
 
-        # Each zone excludes higher-priority zones so colors don't bleed
-        high = high * (1 - ignition)
-        med = med * (1 - ignition) * (1 - high)
+        # Each zone shows only the new area added that day (incremental rings)
+        day1 = day1 * (1 - ignition)
+        day2 = day2 * (1 - ignition) * (1 - day1)
+        day3 = day3 * (1 - ignition) * (1 - day1) * (1 - day2)
 
         base_arr = np.asarray(base_image, dtype=np.float32) / 255.0
         overlay = base_arr.copy()
 
-        # Yellow: medium spread (0.4–0.6)
-        a = (med * OVERLAY_OPACITY)[..., None]
-        overlay = overlay * (1 - a) + np.array([1.0, 0.88, 0.0]) * a
+        # Composite furthest day first so closer days paint on top
+        a = (day3 * OVERLAY_OPACITY)[..., None]
+        overlay = overlay * (1 - a) + np.array([1.0, 0.96, 0.45]) * a  # light yellow: day 3
 
-        # Orange: high spread (>= 0.6)
-        a = (high * OVERLAY_OPACITY)[..., None]
-        overlay = overlay * (1 - a) + np.array([1.0, 0.45, 0.08]) * a
+        a = (day2 * OVERLAY_OPACITY)[..., None]
+        overlay = overlay * (1 - a) + np.array([1.0, 0.82, 0.0]) * a   # yellow: day 2
 
-        # Red: ignition zone (user-drawn origin)
+        a = (day1 * OVERLAY_OPACITY)[..., None]
+        overlay = overlay * (1 - a) + np.array([1.0, 0.45, 0.08]) * a  # orange: day 1
+
         a = (ignition * OVERLAY_OPACITY)[..., None]
-        overlay = overlay * (1 - a) + np.array([0.92, 0.08, 0.08]) * a
+        overlay = overlay * (1 - a) + np.array([0.92, 0.08, 0.08]) * a  # red: ignition
 
         overlay = np.clip(overlay, 0, 1)
         overlay_img = Image.fromarray((overlay * 255).astype(np.uint8))
