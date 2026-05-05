@@ -237,7 +237,8 @@ h1.is-fading {
   position: relative;
   width: min(100%, 20rem);
   border: 1px solid #7f7f7f;
-  background: #c7c7c7;
+  background: transparent;
+  box-shadow: none;
 }
 
 .editor-image-wrap img {
@@ -392,6 +393,10 @@ h1.is-fading {
   padding: 0.18rem 0.4rem;
   background: #fff;
   border-radius: 2px;
+}
+
+.weather-col input[type="number"]::placeholder {
+  color: #8c8c8c;
 }
 
 .slider-field {
@@ -601,6 +606,28 @@ h1.is-fading {
 }
 
 .prediction-output.is-hidden {
+  display: none;
+}
+
+.retry-weather-button {
+  margin-top: 0.6rem;
+  padding: 0.45rem 1.1rem;
+  border: 2px solid #000;
+  background: #fff;
+  font: inherit;
+  font-size: clamp(0.85rem, 1.2vw, 1rem);
+  text-transform: lowercase;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 #000;
+}
+
+.retry-weather-button:hover,
+.retry-weather-button:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 3px 3px 0 #000;
+}
+
+.retry-weather-button.is-hidden {
   display: none;
 }
 
