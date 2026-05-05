@@ -338,10 +338,18 @@ function renderResults(stateTitle, rows) {
           </div>
         </div>
         <p id="editor-error" class="editor-error" aria-live="polite"></p>
-        <p id="prediction-output" class="prediction-output is-hidden" aria-live="polite"></p>
-        <button id="retry-weather-button" class="retry-weather-button is-hidden" type="button">
-          retry weather inputs
-        </button>
+        <div class="prediction-side">
+          <p id="prediction-output" class="prediction-output is-hidden" aria-live="polite"></p>
+          <ul class="prediction-legend is-hidden" id="prediction-legend">
+            <li><span class="legend-swatch" style="background:#eb1414"></span>ignition</li>
+            <li><span class="legend-swatch" style="background:#ff7314"></span>day 1</li>
+            <li><span class="legend-swatch" style="background:#ffd600"></span>day 2</li>
+            <li><span class="legend-swatch" style="background:#fff174"></span>day 3</li>
+          </ul>
+          <button id="retry-weather-button" class="retry-weather-button is-hidden" type="button">
+            try again
+          </button>
+        </div>
 
         <section class="weather-overlay weather-overlay-day0" id="weather-overlay-day0" aria-label="Input weather conditions for day of ignition">
           <div class="weather-panel">
@@ -492,6 +500,8 @@ function setupEditorInteractions(rows) {
         predOutput.classList.add("is-hidden");
         predOutput.innerHTML = "";
       }
+      const predLegend = document.getElementById("prediction-legend");
+      if (predLegend) predLegend.classList.add("is-hidden");
 
       if (retryWeatherButtonEl) {
         retryWeatherButtonEl.classList.add("is-hidden");
@@ -549,20 +559,32 @@ function setupEditorInteractions(rows) {
       const predOutput = document.getElementById("prediction-output");
       if (predOutput) {
         predOutput.classList.add("is-hidden");
+        predOutput.innerHTML = "";
       }
+      const predLegend = document.getElementById("prediction-legend");
+      if (predLegend) predLegend.classList.add("is-hidden");
 
       if (predictedImageEl) {
+        predictedImageEl.src = "";
         predictedImageEl.classList.add("is-hidden");
       }
+
+      // Clear the canvas so the user can draw a new shape
+      if (activeImageWrapEl) {
+        initializeDrawingCanvas(activeImageWrapEl);
+      }
+
+      // Hide weather overlays — user must draw first, then click done
+      const overlayDay0 = document.getElementById("weather-overlay-day0");
+      const overlayDay3 = document.getElementById("weather-overlay-day3");
+      if (overlayDay0) overlayDay0.classList.remove("is-weather-overlay-visible");
+      if (overlayDay3) overlayDay3.classList.remove("is-weather-overlay-visible");
+      currentWeatherDay = null;
 
       resetWeatherData();
       resetWeatherInputs();
 
-      const overlayDay0 = document.getElementById("weather-overlay-day0");
-      const overlayDay3 = document.getElementById("weather-overlay-day3");
-      if (overlayDay0) overlayDay0.classList.add("is-weather-overlay-visible");
-      if (overlayDay3) overlayDay3.classList.remove("is-weather-overlay-visible");
-      currentWeatherDay = 0;
+      animateTitleSwap("draw fire shape");
     };
   }
 
@@ -601,6 +623,8 @@ function showPredictionResultView() {
   if (retryWeatherButtonEl) {
     retryWeatherButtonEl.classList.remove("is-hidden");
   }
+  const legend = document.getElementById("prediction-legend");
+  if (legend) legend.classList.remove("is-hidden");
 }
 
 function resetWeatherData() {

@@ -133,15 +133,7 @@ function displayPredictionResult(result) {
   const output = document.getElementById("prediction-output");
   if (output) {
     const acres = result.predicted_acres.toFixed(2);
-    output.innerHTML = `
-      <div class="prediction-acres">acres burned: <span>${acres}</span></div>
-      <ul class="prediction-legend">
-        <li><span class="legend-swatch" style="background:#eb1414"></span>ignition</li>
-        <li><span class="legend-swatch" style="background:#ff7314"></span>day 1</li>
-        <li><span class="legend-swatch" style="background:#ffd600"></span>day 2</li>
-        <li><span class="legend-swatch" style="background:#fff174"></span>day 3</li>
-      </ul>
-    `;
+    output.innerHTML = `acres burned: <span>${acres}</span>`;
     output.classList.remove("is-hidden");
   }
 

@@ -15,7 +15,7 @@ MODEL_PATH = os.path.join("models", "deepfire_frpinput_best.pt")
 
 SPATIAL_SIZE = 128
 FIRE_PEAK = 1.0
-FIRE_SIGMA = 8.0
+FIRE_SIGMA = 6.0
 VEGETATION_CLASSES = {5, 7, 11}
 OVERLAY_THRESHOLD = 0.4
 IGNITION_THRESHOLD = 0.5
