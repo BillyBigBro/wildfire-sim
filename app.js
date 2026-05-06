@@ -322,19 +322,21 @@ function renderResults(stateTitle, rows) {
       <section class="editor-view" id="editor-view" aria-label="Draw fire shape editor">
         <h2>${CENTER_PROMPT}</h2>
         <p class="editor-subtitle">(draw a closed shape around the ignition area)</p>
-        <div class="editor-image-wrap" id="editor-image-wrap">
-          <img id="editor-image" src="" alt="Selected satellite image" />
-          <canvas id="draw-canvas"></canvas>
-          <img id="prediction-image" class="prediction-image is-hidden" alt="Predicted fire spread overlay" />
-        </div>
-        <div class="editor-toolbar" role="toolbar" aria-label="Drawing tools">
-          <div class="editor-tools-right">
-            <button id="undo-tool" class="tool-button" type="button" aria-label="Undo last stroke">
-              <img src="undo.png" alt="" />
-            </button>
-            <button id="done-tool" class="tool-button" type="button" aria-label="Done drawing">
-              <img src="done.png" alt="" />
-            </button>
+        <div class="editor-image-row">
+          <div class="editor-image-wrap" id="editor-image-wrap">
+            <img id="editor-image" src="" alt="Selected satellite image" />
+            <canvas id="draw-canvas"></canvas>
+            <img id="prediction-image" class="prediction-image is-hidden" alt="Predicted fire spread overlay" />
+          </div>
+          <div class="editor-toolbar" role="toolbar" aria-label="Drawing tools">
+            <div class="editor-tools-right">
+              <button id="undo-tool" class="tool-button" type="button" aria-label="Undo last stroke">
+                <img src="undo.png" alt="" />
+              </button>
+              <button id="done-tool" class="tool-button" type="button" aria-label="Done drawing">
+                <img src="done.png" alt="" />
+              </button>
+            </div>
           </div>
         </div>
         <p id="editor-error" class="editor-error" aria-live="polite"></p>

@@ -236,9 +236,17 @@ h1.is-fading {
 .editor-image-wrap {
   position: relative;
   width: min(100%, 20rem);
+  flex: 0 0 20rem;
   border: 1px solid #7f7f7f;
   background: transparent;
   box-shadow: none;
+}
+
+.editor-image-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  justify-content: center;
 }
 
 .editor-image-wrap img {
@@ -255,10 +263,11 @@ h1.is-fading {
 }
 
 .editor-toolbar {
-  width: min(100%, 20rem);
   display: flex;
-  justify-content: flex-end;
-  margin-top: 0.45rem;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.6rem;
+  margin-top: 0.2rem;
 }
 
 .prediction-image {
